@@ -1,0 +1,370 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Product Label Generator</title>
+    <style>
+        /* Base Reset & Typography */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f1f5f9; 
+            color: #1e293b;
+            line-height: 1.4;
+            padding: 20px 16px;
+        }
+
+        /* Layout */
+        .max-w-3xl { max-width: 48rem; margin: 0 auto; }
+        .grid { display: grid; gap: 16px; }
+        @media (min-width: 768px) { .grid-cols-2 { grid-template-columns: repeat(2, 1fr); } .grid-cols-3 { grid-template-columns: repeat(3, 1fr); } }
+
+        /* Components */
+        .card { 
+            background: white; 
+            border-radius: 16px; 
+            padding: 24px; 
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+            margin-bottom: 24px;
+        }
+        
+        .header { text-align: center; margin-bottom: 24px; }
+        .header h1 { font-size: 1.5rem; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+        .header p { color: #64748b; font-size: 0.9rem; }
+
+        .form-group { margin-bottom: 12px; }
+        label { display: block; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 4px; }
+        
+        input { 
+            width: 100%; 
+            padding: 10px; 
+            background: #f8fafc; 
+            border: 1px solid #e2e8f0; 
+            border-radius: 8px; 
+            outline: none; 
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        input:focus { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1); }
+
+        .btn-primary { 
+            width: 100%; 
+            background: #2563eb; 
+            color: white; 
+            font-weight: 700; 
+            padding: 14px; 
+            border-radius: 10px; 
+            border: none; 
+            cursor: pointer; 
+            transition: all 0.2s;
+            margin-top: 10px;
+        }
+        .btn-primary:hover { background: #1d4ed8; }
+
+        /* Label Results */
+        .result-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 16px; 
+        }
+        
+        .print-link { 
+            color: #2563eb; 
+            font-size: 0.875rem; 
+            text-decoration: none; 
+            font-weight: 600; 
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .label-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+        @media (min-width: 768px) { .label-container { grid-template-columns: 1fr 1fr; } }
+
+        .product-label { 
+            background: white; 
+            border: 2px solid #1e293b; 
+            padding: 15px; 
+            display: flex; 
+            flex-direction: column;
+            gap: 10px;
+            position: relative;
+            min-height: 220px;
+        }
+
+        .label-top { border-bottom: 2px solid #1e293b; padding-bottom: 8px; margin-bottom: 4px; }
+        .shop-name-display { font-size: 0.7rem; font-weight: 700; color: #64748b; letter-spacing: 0.05em; margin-bottom: 2px; }
+        .prod-name { font-size: 1.1rem; font-weight: 800; color: #000; text-transform: uppercase; line-height: 1.1; }
+        .prod-price { font-size: 1.25rem; font-weight: 900; color: #b91c1c; margin-top: 4px; }
+
+        .label-mid { display: grid; grid-template-columns: 1fr 1fr; font-size: 0.75rem; gap: 8px; }
+        .detail-item span { display: block; color: #64748b; font-weight: 600; font-size: 0.65rem; }
+        .detail-item b { color: #1e293b; }
+
+        .label-bottom { 
+            margin-top: auto;
+            display: flex; 
+            justify-content: space-between; 
+            align-items: flex-end; 
+            padding-top: 8px;
+            border-top: 1px dashed #cbd5e1;
+        }
+
+        .barcode-area { flex: 1; margin-right: 10px; overflow: hidden; text-align: center; }
+        .barcode-svg { width: 100%; height: 35px; }
+        .barcode-number { font-size: 10px; font-family: monospace; font-weight: 700; color: #000; display: block; margin-top: 2px; letter-spacing: 1px; }
+        
+        .qr-area { width: 64px; height: 64px; flex-shrink: 0; background: white; border: 1px solid #e2e8f0; padding: 2px; }
+        .qr-svg { width: 100%; height: 100%; }
+        
+        .hidden { display: none; }
+
+        #toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e293b;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 100;
+        }
+
+        @media print {
+            body { background: white; padding: 0; }
+            .card { display: none; }
+            .result-header { display: none; }
+            .label-container { grid-template-columns: 1fr 1fr; gap: 10px; }
+            .product-label { border: 1px solid #000; page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+<mark>Shop bill striker</mark>
+    <div class="max-w-3xl">
+        <div class="card">
+            <div class="header">
+                <h1>Product Label Designer</h1>
+                <p>Generate high-quality labels with Barcodes & QR Codes</p>
+            </div>
+
+            <div class="grid">
+                <div class="grid grid-cols-2">
+                    <div class="form-group">
+                        <label>Shop/Brand Name</label>
+                        <input id="shopName" type="text" placeholder="Your Shop Name" value="QUALITY NATURALS LTD">
+                    </div>
+                    <div class="form-group">
+                        <label>Product Name</label>
+                        <input id="prodName" type="text" placeholder="e.g. Organic Green Tea" value="Premium Coffee Blend">
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-3">
+                    <div class="form-group">
+                        <label>Price</label>
+                        <input id="prodPrice" type="text" placeholder="e.g. $19.99" value="$25.00">
+                    </div>
+                    <div class="form-group">
+                        <label>Mfg. Date</label>
+                        <input id="mfgDate" type="date">
+                    </div>
+                    <div class="form-group">
+                        <label>Exp. Date</label>
+                        <input id="expDate" type="date">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3">
+                    <div class="form-group">
+                        <label>Batch Prefix</label>
+                        <input id="prefix" type="text" value="LOT">
+                    </div>
+                    <div class="form-group">
+                        <label>ID Length</label>
+                        <input id="length" type="number" min="4" max="10" value="5">
+                    </div>
+                    <div class="form-group">
+                        <label>Quantity</label>
+                        <input id="count" type="number" min="1" max="50" value="4">
+                    </div>
+                </div>
+
+                <button onclick="generateLabels()" class="btn-primary">
+                    Create Product Labels
+                </button>
+            </div>
+        </div>
+
+        <div id="resultContainer" class="hidden">
+            <div class="result-header">
+                <h2>Generated Labels</h2>
+                <a onclick="window.print()" class="print-link">
+                    <svg style="width:16px;height:16px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                    Print Labels
+                </a>
+            </div>
+            <div id="labelList" class="label-container"></div>
+        </div>
+
+        <div id="toast">Copied to clipboard!</div>
+    </div>
+
+    <script>
+        // Set default dates
+        window.onload = () => {
+            const today = new Date().toISOString().split('T')[0];
+            const nextYear = new Date();
+            nextYear.setFullYear(nextYear.getFullYear() + 1);
+            document.getElementById('mfgDate').value = today;
+            document.getElementById('expDate').value = nextYear.toISOString().split('T')[0];
+            generateLabels();
+        };
+
+        function generateLabels() {
+            const shopName = document.getElementById('shopName').value || '';
+            const name = document.getElementById('prodName').value || 'Product Name';
+            const price = document.getElementById('prodPrice').value || '$0.00';
+            const mfg = document.getElementById('mfgDate').value;
+            const exp = document.getElementById('expDate').value;
+            
+            const prefix = document.getElementById('prefix').value.trim().toUpperCase();
+            const length = parseInt(document.getElementById('length').value) || 5;
+            const count = parseInt(document.getElementById('count').value) || 1;
+            
+            const list = document.getElementById('labelList');
+            const container = document.getElementById('resultContainer');
+
+            list.innerHTML = '';
+            container.classList.remove('hidden');
+
+            for (let i = 0; i < count; i++) {
+                const randomPart = Math.random().toString(36).substring(2, 2 + length).toUpperCase();
+                const batch = `${prefix}-${randomPart}`;
+                
+                const label = document.createElement('div');
+                label.className = 'product-label';
+                
+                label.innerHTML = `
+                    <div class="label-top">
+                        ${shopName ? `<div class="shop-name-display">${shopName}</div>` : ''}
+                        <div class="prod-name">${name}</div>
+                        <div class="prod-price">${price}</div>
+                    </div>
+                    <div class="label-mid">
+                        <div class="detail-item">
+                            <span>MFG DATE</span>
+                            <b>${mfg}</b>
+                        </div>
+                        <div class="detail-item">
+                            <span>EXP DATE</span>
+                            <b>${exp}</b>
+                        </div>
+                        <div class="detail-item">
+                            <span>BATCH NO</span>
+                            <b style="cursor:pointer" onclick="copyText('${batch}')" title="Click to copy">${batch}</b>
+                        </div>
+                    </div>
+                    <div class="label-bottom">
+                        <div class="barcode-area">
+                            ${generateSVGBarcode(batch)}
+                            <span class="barcode-number">${batch}</span>
+                        </div>
+                        <div class="qr-area">
+                           ${generateNativeQR(batch)}
+                        </div>
+                    </div>
+                `;
+                
+                list.appendChild(label);
+            }
+        }
+
+        /**
+         * Native QR Code SVG Generator (Simplified Offline Version)
+         */
+        function generateNativeQR(text) {
+            const size = 21;
+            let matrix = Array(size).fill().map(() => Array(size).fill(0));
+            
+            const markers = [[0,0], [14,0], [0,14]];
+            markers.forEach(([ox, oy]) => {
+                for(let y=0; y<7; y++) for(let x=0; x<7; x++) {
+                    if(x===0 || x===6 || y===0 || y===6 || (x>1 && x<5 && y>1 && y<5)) 
+                        matrix[oy+y][ox+x] = 1;
+                }
+            });
+
+            let charIndex = 0;
+            for(let y=0; y<size; y++) {
+                for(let x=0; x<size; x++) {
+                    if (matrix[y][x] === 1) continue;
+                    const charCode = text.charCodeAt(charIndex % text.length);
+                    if ((charCode >> (x % 8)) & 1) matrix[y][x] = 1;
+                    if (x % 3 === 0) charIndex++;
+                }
+            }
+
+            let svg = `<svg viewBox="0 0 ${size} ${size}" class="qr-svg" shape-rendering="crispEdges">`;
+            for(let y=0; y<size; y++) {
+                for(let x=0; x<size; x++) {
+                    if(matrix[y][x]) svg += `<rect x="${x}" y="${y}" width="1" height="1" fill="black" />`;
+                }
+            }
+            svg += `</svg>`;
+            return svg;
+        }
+
+        /**
+         * Native Code-128 style Barcode Generator
+         */
+        function generateSVGBarcode(text) {
+            let pattern = "101011"; 
+            for (let i = 0; i < text.length; i++) {
+                const charCode = text.charCodeAt(i);
+                pattern += (charCode % 2 === 0) ? "11010" : "10110";
+            }
+            pattern += "110101"; 
+
+            let svg = `<svg viewBox="0 0 ${pattern.length} 40" preserveAspectRatio="none" class="barcode-svg" shape-rendering="crispEdges">`;
+            for (let i = 0; i < pattern.length; i++) {
+                if (pattern[i] === "1") {
+                    svg += `<rect x="${i}" y="0" width="0.8" height="40" fill="black" />`;
+                }
+            }
+            svg += `</svg>`;
+            return svg;
+        }
+
+        function copyText(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            showToast();
+        }
+
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.style.opacity = '1';
+            setTimeout(() => { toast.style.opacity = '0'; }, 2000);
+        }
+    </script>
+</body>
+</html>
+
+```
